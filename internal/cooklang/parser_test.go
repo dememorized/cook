@@ -1,4 +1,4 @@
-package clext
+package cooklang
 
 import (
 	_ "embed"

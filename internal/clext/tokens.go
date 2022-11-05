@@ -23,11 +23,13 @@ const (
 	TokenWhitespace
 	TokenNewLine
 
+	TokenColon
 	TokenPercent
 	TokenAt
 	TokenDoubleDash
 	TokenLeftBrace
 	TokenRightBrace
+	TokenDoubleGT
 	TokenHash
 	TokenTilde
 )
@@ -44,18 +46,24 @@ func (t TokenType) String() string {
 		return "Whitespace"
 	case TokenNewLine:
 		return "NewLine"
+	case TokenColon:
+		return "Colon"
 	case TokenPercent:
 		return "Percent"
 	case TokenAt:
 		return "At"
 	case TokenDoubleDash:
 		return "DoubleDash"
+	case TokenHash:
+		return "Hash"
 	case TokenLeftBrace:
 		return "LeftBrace"
 	case TokenRightBrace:
 		return "RightBrace"
 	case TokenTilde:
 		return "Tilde"
+	case TokenDoubleGT:
+		return "DoubleGreaterThan"
 	default:
 		return "Unknown"
 	}
@@ -77,33 +85,45 @@ func Tokenize(filename string, recipe io.Reader) ([]Token, []ParseError) {
 	tokens := []Token{}
 
 	for {
-		c := scan.Next()
-		if c == scanner.EOF {
+		t := nextToken(scan)
+		if t.Type == TokenEOF {
 			break
 		}
 
-		tok, ok := singleCharControl(c, scan)
-		if ok {
-			tokens = append(tokens, tok)
-			continue
-		}
-
-		tok, ok = doubleCharControl(c, scan)
-		if ok {
-			tokens = append(tokens, tok)
-			continue
-		}
-
-		tokens = append(tokens, eatWord(c, scan))
+		tokens = append(tokens, t)
 	}
 
 	return tokens, errors
 }
 
+func nextToken(scan *scanner.Scanner) (tok Token) {
+	position := scan.Pos()
+	defer func() {
+		tok.Position = position
+	}()
+
+	c := scan.Next()
+	if c == scanner.EOF {
+		return Token{
+			Type:  TokenEOF,
+			Value: "\u0000",
+		}
+	}
+
+	if tok, ok := doubleCharControl(c, scan); ok {
+		return tok
+	}
+
+	if tok, ok := singleCharControl(c, scan); ok {
+		return tok
+	}
+
+	return eatWord(c, scan)
+}
+
 func singleCharControl(c rune, scan *scanner.Scanner) (Token, bool) {
 	t := Token{
-		Position: scan.Pos(),
-		Value:    string(c),
+		Value: string(c),
 	}
 
 	switch c {
@@ -115,6 +135,8 @@ func singleCharControl(c rune, scan *scanner.Scanner) (Token, bool) {
 		t.Type = TokenLeftBrace
 	case '}':
 		t.Type = TokenRightBrace
+	case ':':
+		t.Type = TokenColon
 	case '%':
 		t.Type = TokenPercent
 	case '\r':
@@ -141,13 +163,14 @@ func doubleCharControl(c rune, scan *scanner.Scanner) (Token, bool) {
 	val := string(c) + string(scan.Peek())
 
 	t := Token{
-		Position: scan.Pos(),
-		Value:    val,
+		Value: val,
 	}
 
 	switch val {
 	case "--":
 		t.Type = TokenDoubleDash
+	case ">>":
+		t.Type = TokenDoubleGT
 	default:
 		return Token{}, false
 	}
@@ -159,11 +182,9 @@ func doubleCharControl(c rune, scan *scanner.Scanner) (Token, bool) {
 
 func eatWord(c rune, scan *scanner.Scanner) Token {
 	t := Token{
-		Position: scan.Pos(),
+		Type:  TokenInvalid,
+		Value: string(c),
 	}
-
-	t.Type = TokenInvalid
-	t.Value = string(c)
 
 	if unicode.In(c, unicode.White_Space) {
 		b := strings.Builder{}
@@ -184,6 +205,7 @@ func eatWord(c rune, scan *scanner.Scanner) Token {
 		terminal := &unicode.RangeTable{
 			R16: []unicode.Range16{
 				{Lo: '%', Hi: '%', Stride: 1}, // 0x25
+				{Lo: ':', Hi: ':', Stride: 1}, // 0x3a
 				{Lo: '{', Hi: '}', Stride: 2}, // 0x7b, 0x7d
 			},
 			LatinOffset: 2,

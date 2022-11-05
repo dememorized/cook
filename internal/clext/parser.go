@@ -31,7 +31,7 @@ func (p *parser) Peek() Token {
 	return p.tokens[p.pos]
 }
 
-func Parse(filename string, recipe []Token) *AST {
+func Parse(filename string, recipe []Token) (*AST, error) {
 	ast := &AST{
 		Filename: filename,
 		Steps:    make([]Step, 0),
@@ -42,6 +42,7 @@ func Parse(filename string, recipe []Token) *AST {
 		tokens: recipe,
 		Error:  nil,
 	}
+	p.Next()
 
 	step := Step{
 		base: base{pos: scanner.Position{
@@ -51,6 +52,7 @@ func Parse(filename string, recipe []Token) *AST {
 			Column:   1,
 		}},
 	}
+
 	for p.Error == nil && p.curr.Type != TokenEOF {
 		t := p.curr
 		b := base{pos: t.Position}
@@ -63,14 +65,43 @@ func Parse(filename string, recipe []Token) *AST {
 				step = Step{base: b}
 			}
 		case TokenDoubleDash:
-			comment := p.eatUntil(oneOf(TokenNewLine))
-
 			step.Components = append(step.Components, Comment{
 				base:    b,
-				Comment: comment,
+				Comment: p.eatUntil(oneOf(TokenNewLine)),
 			})
-		case TokenText, TokenWhitespace:
-			txt := p.eatUntil(notIn(TokenText, TokenWhitespace, TokenPercent, TokenLeftBrace, TokenRightBrace))
+		case TokenDoubleGT:
+			if t.Position.Column != 1 {
+				step.Components = append(step.Components, Instruction{
+					base:        b,
+					Instruction: ">>",
+				})
+				p.skip(oneOf(TokenDoubleGT))
+				continue
+			}
+
+			md := Metadata{
+				base: b,
+			}
+
+			p.skip(oneOf(TokenDoubleGT, TokenWhitespace))
+			md.Key = p.eatUntil(oneOf(TokenColon, TokenNewLine))
+			if !p.skip(oneOf(TokenColon)) {
+				p.Error = fmt.Errorf("expected colon to separate metadata key and value on line %d", t.Position.Line)
+			}
+			p.skip(oneOf(TokenWhitespace))
+			md.Value = p.eatUntil(oneOf(TokenNewLine))
+
+			step.Components = append(step.Components, md)
+		case TokenText, TokenWhitespace, TokenRightBrace, TokenLeftBrace:
+			txt := p.eatUntil(notIn(
+				TokenText,
+				TokenWhitespace,
+				TokenPercent,
+				TokenLeftBrace,
+				TokenRightBrace,
+				TokenColon,
+				TokenDoubleGT,
+			))
 
 			step.Components = append(step.Components, Instruction{
 				base:        b,
@@ -85,6 +116,7 @@ func Parse(filename string, recipe []Token) *AST {
 			timer.Magnitude = p.eatUntil(oneOf(TokenPercent))
 			p.skip(oneOf(TokenPercent))
 			timer.Unit = p.eatUntil(oneOf(TokenRightBrace))
+			p.skip(oneOf(TokenRightBrace))
 
 			step.Components = append(step.Components, timer)
 		case TokenHash:
@@ -92,7 +124,8 @@ func Parse(filename string, recipe []Token) *AST {
 			cookware := Cookware{base: b}
 
 			if p.seekTerminal(oneOf(TokenLeftBrace), oneOf(TokenText, TokenWhitespace)) {
-				cookware.Name = p.eatUntil(oneOf(TokenLeftBrace))
+				cookware.Name = p.eatUntil(oneOf(TokenRightBrace))
+				p.skip(oneOf(TokenRightBrace))
 			} else {
 				cookware.Name = p.eatUntil(notIn(TokenText))
 			}
@@ -110,12 +143,19 @@ func Parse(filename string, recipe []Token) *AST {
 					p.skip(oneOf(TokenPercent))
 					ing.Unit = p.eatUntil(oneOf(TokenRightBrace))
 				}
+				p.skip(oneOf(TokenRightBrace))
 			} else {
 				ing.Ingredient = p.eatUntil(notIn(TokenText))
 			}
 
 			step.Components = append(step.Components, ing)
 		default:
+			p.Error = fmt.Errorf(
+				"%s: got unknown token %s with value %x",
+				t.Position,
+				t.Type.String(),
+				t.Value,
+			)
 			p.Next()
 		}
 	}
@@ -124,7 +164,7 @@ func Parse(filename string, recipe []Token) *AST {
 		ast.Steps = append(ast.Steps, step)
 	}
 
-	return ast
+	return ast, p.Error
 }
 
 type condition = func(TokenType) bool

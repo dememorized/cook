@@ -1,6 +1,7 @@
 package clext
 
 import (
+	"fmt"
 	"strings"
 	"text/scanner"
 )
@@ -13,7 +14,7 @@ type AST struct {
 
 func (a *AST) ReportError(s *scanner.Scanner, msg string) {
 	a.Errors = append(a.Errors, ParseError{
-		Position: s.Pos(),
+		Position: s.Position,
 		Message:  msg,
 	})
 }
@@ -58,7 +59,7 @@ func (s Step) String() string {
 			b.WriteString(step.String())
 		}
 	}
-	return b.String() + "\n\n"
+	return fmt.Sprintf("(step %s)\n", b.String())
 }
 
 func (s Step) HasInstructions() bool {
@@ -89,7 +90,7 @@ type Instruction struct {
 }
 
 func (i Instruction) String() string {
-	return i.Instruction
+	return fmt.Sprintf(`(instruction "%s")`, i.Instruction)
 }
 
 type Comment struct {
@@ -98,7 +99,7 @@ type Comment struct {
 }
 
 func (c Comment) String() string {
-	return c.Comment
+	return fmt.Sprintf(`(comment "%s")`, c.Comment)
 }
 
 type Ingredient struct {
@@ -109,17 +110,7 @@ type Ingredient struct {
 }
 
 func (i Ingredient) String() string {
-	b := strings.Builder{}
-
-	if i.Quantity != "" {
-		b.WriteString(i.Quantity + " ")
-	}
-	if i.Unit != "" {
-		b.WriteString(i.Unit + " ")
-	}
-	b.WriteString(i.Ingredient)
-
-	return b.String()
+	return fmt.Sprintf(`(ingredient "%s" "%s" "%s")`, i.Ingredient, i.Quantity, i.Unit)
 }
 
 type Cookware struct {
@@ -128,7 +119,7 @@ type Cookware struct {
 }
 
 func (c Cookware) String() string {
-	return c.Name
+	return fmt.Sprintf(`(cookware "%s")`, c.Name)
 }
 
 type Timer struct {
@@ -139,5 +130,15 @@ type Timer struct {
 }
 
 func (t Timer) String() string {
-	return t.Magnitude + " " + t.Unit
+	return fmt.Sprintf(`(timer "%s" "%s")`, t.Magnitude, t.Unit)
+}
+
+type Metadata struct {
+	base
+	Key   string
+	Value string
+}
+
+func (m Metadata) String() string {
+	return fmt.Sprintf(`(metadata "%s" "%s")`, m.Key, m.Value)
 }

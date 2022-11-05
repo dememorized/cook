@@ -12,9 +12,18 @@ var pancakes string
 
 func TestTokenize(t *testing.T) {
 	const filename = "testdata/pancakes.cook"
-	tokens, _ := Tokenize(filename, strings.NewReader(pancakes))
+	tokens, parseErrs := Tokenize(filename, strings.NewReader(pancakes))
+	if len(parseErrs) != 0 {
+		t.Error(parseErrs)
+		t.FailNow()
+	}
 
-	ast := Parse(filename, tokens)
+	ast, err := Parse(filename, tokens)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
 	fmt.Printf("%s\n", ast)
 
 	for _, step := range ast.Steps {

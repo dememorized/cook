@@ -12,6 +12,16 @@ type AST struct {
 	Errors   []ParseError
 }
 
+func (a *AST) Metadata() map[string]string {
+	md := map[string]string{}
+	for _, step := range a.Steps {
+		for _, m := range step.Metadata() {
+			md[m.Key] = m.Value
+		}
+	}
+	return md
+}
+
 func (a *AST) ReportError(s *scanner.Scanner, msg string) {
 	a.Errors = append(a.Errors, ParseError{
 		Position: s.Position,
@@ -84,6 +94,17 @@ func (s Step) Ingredients() []Ingredient {
 	return list
 }
 
+func (s Step) Metadata() []Metadata {
+	list := []Metadata{}
+	for _, c := range s.Components {
+		i, ok := c.(Metadata)
+		if ok {
+			list = append(list, i)
+		}
+	}
+	return list
+}
+
 type Instruction struct {
 	base
 	Instruction string
@@ -104,13 +125,13 @@ func (c Comment) String() string {
 
 type Ingredient struct {
 	base
-	Ingredient string
-	Quantity   string
-	Unit       string
+	Name     string
+	Quantity string
+	Unit     string
 }
 
 func (i Ingredient) String() string {
-	return fmt.Sprintf(`(ingredient "%s" "%s" "%s")`, i.Ingredient, i.Quantity, i.Unit)
+	return fmt.Sprintf(`(ingredient "%s" "%s" "%s")`, i.Name, i.Quantity, i.Unit)
 }
 
 type Cookware struct {

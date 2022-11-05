@@ -84,7 +84,8 @@ func Parse(filename string, recipe []Token) (*AST, error) {
 			}
 
 			p.skip(oneOf(TokenDoubleGT, TokenWhitespace))
-			md.Key = p.eatUntil(oneOf(TokenColon, TokenNewLine))
+			md.Key = strings.TrimSpace(p.eatUntil(oneOf(TokenColon, TokenNewLine)))
+
 			if !p.skip(oneOf(TokenColon)) {
 				p.Error = fmt.Errorf("expected colon to separate metadata key and value on line %d", t.Position.Line)
 			}
@@ -124,8 +125,8 @@ func Parse(filename string, recipe []Token) (*AST, error) {
 			cookware := Cookware{base: b}
 
 			if p.seekTerminal(oneOf(TokenLeftBrace), oneOf(TokenText, TokenWhitespace)) {
-				cookware.Name = p.eatUntil(oneOf(TokenRightBrace))
-				p.skip(oneOf(TokenRightBrace))
+				cookware.Name = strings.TrimSpace(p.eatUntil(oneOf(TokenLeftBrace)))
+				p.skip(oneOf(TokenLeftBrace, TokenRightBrace))
 			} else {
 				cookware.Name = p.eatUntil(notIn(TokenText))
 			}
@@ -136,16 +137,16 @@ func Parse(filename string, recipe []Token) (*AST, error) {
 			ing := Ingredient{base: b}
 
 			if p.seekTerminal(oneOf(TokenLeftBrace), oneOf(TokenText, TokenWhitespace)) {
-				ing.Ingredient = p.eatUntil(oneOf(TokenLeftBrace))
+				ing.Name = p.eatUntil(oneOf(TokenLeftBrace))
 				p.skip(oneOf(TokenLeftBrace))
-				ing.Quantity = p.eatUntil(oneOf(TokenPercent, TokenRightBrace))
+				ing.Quantity = strings.TrimSpace(p.eatUntil(oneOf(TokenPercent, TokenRightBrace)))
 				if p.curr.Type == TokenPercent {
 					p.skip(oneOf(TokenPercent))
-					ing.Unit = p.eatUntil(oneOf(TokenRightBrace))
+					ing.Unit = strings.TrimSpace(p.eatUntil(oneOf(TokenRightBrace)))
 				}
 				p.skip(oneOf(TokenRightBrace))
 			} else {
-				ing.Ingredient = p.eatUntil(notIn(TokenText))
+				ing.Name = p.eatUntil(notIn(TokenText))
 			}
 
 			step.Components = append(step.Components, ing)

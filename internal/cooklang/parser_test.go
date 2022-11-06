@@ -1,11 +1,11 @@
 package cooklang
 
 import (
+	"cook/internal/conversion"
 	_ "embed"
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -62,11 +62,7 @@ func TestCanonical(t *testing.T) {
 		return
 	}
 
-	skippedTests := map[string]struct{}{
-		"testFractions":           {},
-		"testFractionsWithSpaces": {},
-		"testTimerFractional":     {},
-	}
+	skippedTests := map[string]struct{}{}
 
 	for k, v := range tests.Tests {
 		k, v := k, v
@@ -175,7 +171,7 @@ func equals(t testing.TB, actual any, expected any) {
 	cmp := actual
 	if isString && expectNumber {
 		var err error
-		cmp, err = strconv.ParseFloat(actualString, 64)
+		cmp, err = conversion.Numeral(actualString).Float()
 		if err != nil {
 			t.Errorf("got error when converting value to float")
 		}

@@ -2,6 +2,7 @@ package cooklang
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"text/scanner"
 )
@@ -27,6 +28,25 @@ func (a *AST) ReportError(s *scanner.Scanner, msg string) {
 		Position: s.Position,
 		Message:  msg,
 	})
+}
+
+func (a *AST) String() string {
+	md := a.Metadata()
+	mdString := strings.Builder{}
+
+	if len(md) != 0 {
+		mdString.WriteByte('\n')
+	}
+	for k, v := range md {
+		mdString.WriteString(fmt.Sprintf("\t%s %s\n", strconv.Quote(k), strconv.Quote(v)))
+	}
+
+	stepString := strings.Builder{}
+	for _, step := range a.Steps {
+		stepString.WriteString("\n" + step.String())
+	}
+
+	return fmt.Sprintf("(recipe {%s}\n[%s])", mdString.String(), stepString.String())
 }
 
 type ParseError struct {
@@ -60,16 +80,17 @@ type Step struct {
 }
 
 func (s Step) String() string {
-	b := strings.Builder{}
+	comps := make([]string, 0, len(s.Components))
 	for _, step := range s.Components {
 		switch step.(type) {
-		case Comment:
+		// Comments are not printed, and Metadata is top level only in Cooklang
+		case Comment, Metadata:
 			continue
 		default:
-			b.WriteString(step.String())
+			comps = append(comps, step.String())
 		}
 	}
-	return fmt.Sprintf("(step %s)\n", b.String())
+	return fmt.Sprintf("(step {}\n\t[%s])\n", strings.Join(comps, "\n\t"))
 }
 
 func (s Step) HasInstructions() bool {
@@ -131,7 +152,15 @@ type Ingredient struct {
 }
 
 func (i Ingredient) String() string {
-	return fmt.Sprintf(`(ingredient "%s" "%s" "%s")`, i.Name, i.Quantity, i.Unit)
+	args := []string{}
+	if i.Quantity != "" {
+		args = append(args, fmt.Sprintf(":quantity %s", strconv.Quote(i.Quantity)))
+	}
+	if i.Unit != "" {
+		args = append(args, fmt.Sprintf(":unit %s", strconv.Quote(i.Unit)))
+	}
+
+	return fmt.Sprintf(`(ingredient "%s" {%s})`, i.Name, strings.Join(args, " "))
 }
 
 type Cookware struct {
@@ -151,7 +180,7 @@ type Timer struct {
 }
 
 func (t Timer) String() string {
-	return fmt.Sprintf(`(timer "%s" "%s")`, t.Magnitude, t.Unit)
+	return fmt.Sprintf(`(timer %s {:magnitude %s :unit %s})`, strconv.Quote(t.Name), strconv.Quote(t.Magnitude), strconv.Quote(t.Unit))
 }
 
 type Metadata struct {

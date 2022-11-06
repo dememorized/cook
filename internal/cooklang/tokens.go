@@ -1,6 +1,7 @@
 package cooklang
 
 import (
+	"github.com/dememorized/cook/aromalang"
 	"io"
 	"strings"
 	"text/scanner"
@@ -69,14 +70,14 @@ func (t TokenType) String() string {
 	}
 }
 
-func Tokenize(filename string, recipe io.Reader) ([]Token, []ParseError) {
-	errors := []ParseError{}
+func Tokenize(filename string, recipe io.Reader) ([]Token, []aromalang.ParseError) {
+	errors := []aromalang.ParseError{}
 
 	scan := &scanner.Scanner{}
 	scan.Init(recipe)
 	scan.Filename = filename
 	scan.Error = func(s *scanner.Scanner, msg string) {
-		errors = append(errors, ParseError{
+		errors = append(errors, aromalang.ParseError{
 			Position: s.Pos(),
 			Message:  msg,
 		})
@@ -208,7 +209,7 @@ func eatWord(c rune, scan *scanner.Scanner) Token {
 				{Lo: ':', Hi: ':', Stride: 1}, // 0x3a
 				{Lo: '{', Hi: '}', Stride: 2}, // 0x7b, 0x7d
 			},
-			LatinOffset: 2,
+			LatinOffset: 3,
 		}
 		for unicode.IsOneOf(unicode.PrintRanges, scan.Peek()) && !unicode.In(scan.Peek(), terminal) {
 			b.WriteRune(scan.Next())

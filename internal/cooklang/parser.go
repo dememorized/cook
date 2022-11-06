@@ -2,6 +2,7 @@ package cooklang
 
 import (
 	"fmt"
+	"github.com/dememorized/cook/aromalang"
 	"strings"
 	"text/scanner"
 )
@@ -31,10 +32,10 @@ func (p *parser) Peek() Token {
 	return p.tokens[p.pos]
 }
 
-func Parse(filename string, recipe []Token) (*AST, error) {
-	ast := &AST{
+func Parse(filename string, recipe []Token) (*aromalang.AST, error) {
+	ast := &aromalang.AST{
 		Filename: filename,
-		Steps:    make([]Step, 0),
+		Steps:    make([]aromalang.Step, 0),
 	}
 
 	p := &parser{
@@ -44,8 +45,8 @@ func Parse(filename string, recipe []Token) (*AST, error) {
 	}
 	p.Next()
 
-	step := Step{
-		base: base{pos: scanner.Position{
+	step := aromalang.Step{
+		Base: aromalang.Base{Pos: scanner.Position{
 			Filename: filename,
 			Offset:   0,
 			Line:     1,
@@ -55,32 +56,32 @@ func Parse(filename string, recipe []Token) (*AST, error) {
 
 	for p.Error == nil && p.curr.Type != TokenEOF {
 		t := p.curr
-		b := base{pos: t.Position}
+		b := aromalang.Base{Pos: t.Position}
 
 		switch t.Type {
 		case TokenNewLine:
 			t := p.Next()
 			if t.Type == TokenNewLine && step.HasInstructions() {
 				ast.Steps = append(ast.Steps, step)
-				step = Step{base: b}
+				step = aromalang.Step{Base: b}
 			}
 		case TokenDoubleDash:
-			step.Components = append(step.Components, Comment{
-				base:    b,
+			step.Components = append(step.Components, aromalang.Comment{
+				Base:    b,
 				Comment: p.eatUntil(oneOf(TokenNewLine)),
 			})
 		case TokenDoubleGT:
 			if t.Position.Column != 1 {
-				step.Components = append(step.Components, Instruction{
-					base:        b,
+				step.Components = append(step.Components, aromalang.Instruction{
+					Base:        b,
 					Instruction: ">>",
 				})
 				p.skip(oneOf(TokenDoubleGT))
 				continue
 			}
 
-			md := Metadata{
-				base: b,
+			md := aromalang.Metadata{
+				Base: b,
 			}
 
 			p.skip(oneOf(TokenDoubleGT, TokenWhitespace))
@@ -104,12 +105,12 @@ func Parse(filename string, recipe []Token) (*AST, error) {
 				TokenDoubleGT,
 			))
 
-			step.Components = append(step.Components, Instruction{
-				base:        b,
+			step.Components = append(step.Components, aromalang.Instruction{
+				Base:        b,
 				Instruction: txt,
 			})
 		case TokenTilde:
-			timer := Timer{base: b}
+			timer := aromalang.Timer{Base: b}
 
 			p.skip(oneOf(TokenTilde))
 			timer.Name = p.eatUntil(oneOf(TokenLeftBrace))
@@ -122,7 +123,7 @@ func Parse(filename string, recipe []Token) (*AST, error) {
 			step.Components = append(step.Components, timer)
 		case TokenHash:
 			p.skip(oneOf(TokenHash))
-			cookware := Cookware{base: b}
+			cookware := aromalang.Cookware{Base: b}
 
 			if p.seekTerminal(oneOf(TokenLeftBrace), oneOf(TokenText, TokenWhitespace)) {
 				cookware.Name = strings.TrimSpace(p.eatUntil(oneOf(TokenLeftBrace)))
@@ -134,7 +135,7 @@ func Parse(filename string, recipe []Token) (*AST, error) {
 			step.Components = append(step.Components, cookware)
 		case TokenAt:
 			p.skip(oneOf(TokenAt))
-			ing := Ingredient{base: b}
+			ing := aromalang.Ingredient{Base: b}
 
 			if p.seekTerminal(oneOf(TokenLeftBrace), oneOf(TokenText, TokenWhitespace)) {
 				ing.Name = p.eatUntil(oneOf(TokenLeftBrace))
@@ -192,7 +193,7 @@ func (p *parser) eatUntil(end condition) string {
 }
 
 func (p *parser) rawEatUntil(end condition) []Token {
-	tokens := []Token{}
+	var tokens []Token
 
 	for tok := p.curr; tok.Type != TokenEOF; tok = p.Next() {
 		if end(tok.Type) {

@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/dememorized/cook/aromalang"
 	"github.com/dememorized/cook/internal/conversion"
 	"reflect"
 	"strings"
@@ -101,7 +102,7 @@ func TestCanonical(t *testing.T) {
 	}
 }
 
-func StepsMatches(t testing.TB, step Step, expected []map[string]interface{}) {
+func StepsMatches(t testing.TB, step aromalang.Step, expected []map[string]interface{}) {
 	if len(step.Components) < len(expected) {
 		t.Errorf("there are more expected components than actual components in the step")
 		return
@@ -115,11 +116,11 @@ func StepsMatches(t testing.TB, step Step, expected []map[string]interface{}) {
 			t.FailNow()
 		}
 
-		var c Component
+		var c aromalang.Component
 		i, c = nextComponent(i, step)
 		switch tpe {
 		case "ingredient":
-			ingredient, ok := c.(Ingredient)
+			ingredient, ok := c.(aromalang.Ingredient)
 			if !ok {
 				t.Errorf("expected next kind to be ingredient, got %s, %v %s", reflect.TypeOf(c), expected, step)
 				return
@@ -132,21 +133,21 @@ func StepsMatches(t testing.TB, step Step, expected []map[string]interface{}) {
 			}
 			equals(t, ingredient.Unit, exp["units"])
 		case "cookware":
-			cookware, ok := c.(Cookware)
+			cookware, ok := c.(aromalang.Cookware)
 			if !ok {
 				t.Errorf("expected next kind to be cookware, got %s", reflect.TypeOf(c))
 				return
 			}
 			equals(t, cookware.Name, exp["name"])
 		case "text":
-			instruction, ok := c.(Instruction)
+			instruction, ok := c.(aromalang.Instruction)
 			if !ok {
 				t.Errorf("expected next kind to be instruction, got %s", reflect.TypeOf(c))
 				return
 			}
 			equals(t, instruction.Instruction, exp["value"])
 		case "timer":
-			timer, ok := c.(Timer)
+			timer, ok := c.(aromalang.Timer)
 			if !ok {
 				t.Errorf("expected next kind to be ingredient, got %s", reflect.TypeOf(c))
 				return
@@ -185,10 +186,10 @@ func equals(t testing.TB, actual any, expected any) {
 	}
 }
 
-func nextComponent(i int, step Step) (int, Component) {
+func nextComponent(i int, step aromalang.Step) (int, aromalang.Component) {
 	for j, component := range step.Components[i:] {
 		switch component.(type) {
-		case Instruction, Ingredient, Cookware, Timer:
+		case aromalang.Instruction, aromalang.Ingredient, aromalang.Cookware, aromalang.Timer:
 			return i + j + 1, component
 		}
 	}

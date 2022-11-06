@@ -1,4 +1,4 @@
-package cooklang
+package aromalang
 
 import (
 	"fmt"
@@ -64,18 +64,18 @@ type Component interface {
 	String() string
 }
 
-type base struct {
-	pos scanner.Position
+type Base struct {
+	Pos scanner.Position
 }
 
-func (base) isComponent() {}
+func (Base) isComponent() {}
 
-func (b base) Position() scanner.Position {
-	return b.pos
+func (b Base) Position() scanner.Position {
+	return b.Pos
 }
 
 type Step struct {
-	base
+	Base
 	Components []Component
 }
 
@@ -127,7 +127,7 @@ func (s Step) Metadata() []Metadata {
 }
 
 type Instruction struct {
-	base
+	Base
 	Instruction string
 }
 
@@ -136,7 +136,7 @@ func (i Instruction) String() string {
 }
 
 type Comment struct {
-	base
+	Base
 	Comment string
 }
 
@@ -145,7 +145,7 @@ func (c Comment) String() string {
 }
 
 type Ingredient struct {
-	base
+	Base
 	Name     string
 	Quantity string
 	Unit     string
@@ -164,7 +164,7 @@ func (i Ingredient) String() string {
 }
 
 type Cookware struct {
-	base
+	Base
 	Name string
 }
 
@@ -173,7 +173,7 @@ func (c Cookware) String() string {
 }
 
 type Timer struct {
-	base
+	Base
 	Name      string
 	Magnitude string
 	Unit      string
@@ -184,7 +184,7 @@ func (t Timer) String() string {
 }
 
 type Metadata struct {
-	base
+	Base
 	Key   string
 	Value string
 }

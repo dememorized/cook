@@ -1,10 +1,10 @@
 package cooklang
 
 import (
-	"cook/internal/conversion"
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/dememorized/cook/internal/conversion"
 	"reflect"
 	"strings"
 	"testing"

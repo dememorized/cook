@@ -1,0 +1,40 @@
+(recipe {
+	"source" "https://www.jamieoliver.com/recipes/eggs-recipes/easy-pancakes/"
+}
+[
+(step {}
+	[(instruction "Crack the ")
+	(ingredient "eggs" {:quantity "3"})
+	(instruction " into a blender, then add the ")
+	(ingredient "flour" {:quantity "125" :unit "g"})
+	(instruction ", ")
+	(ingredient "milk" {:quantity "250" :unit "ml"})
+	(instruction " and ")
+	(ingredient "sea salt" {:quantity "1" :unit "pinch"})
+	(instruction ", and blitz until smooth.")])
+
+(step {}
+	[(instruction "Pour into a ")
+	(cookware "bowl")
+	(instruction " and leave to stand for ")
+	(timer "" {:magnitude "15" :unit "minutes"})
+	(instruction ".")])
+
+(step {}
+	[(instruction "Melt the ")
+	(ingredient "butter" {})
+	(instruction " (or a drizzle of ")
+	(ingredient "oil" {})
+	(instruction " if you want to be a bit healthier) in a ")
+	(cookware "large non-stick frying pan")
+	(instruction " on a medium heat, then tilt the pan so the butter coats the surface.")])
+
+(step {}
+	[(instruction "Pour in 1 ladle of batter and tilt again, so that the batter spreads all over the base, then cook for 1 to 2 minutes, or until it starts to come away from the sides.")])
+
+(step {}
+	[(instruction "Once golden underneath, flip the pancake over and cook for 1 further minute, or until cooked through.")])
+
+(step {}
+	[(instruction "Serve straightaway with your favourite topping. ")])
+])

@@ -14,7 +14,7 @@ func TestParse(t *testing.T) {
 		t.FailNow()
 	}
 
-	ast, err := Parse(filename, tokens)
+	ast, err := ParseTokens(filename, tokens)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()

@@ -1,6 +1,8 @@
 package aromalang
 
 import (
+	"fmt"
+	"io"
 	"reflect"
 )
 
@@ -29,7 +31,16 @@ func (p *parser) Peek() Token {
 	return p.tokens[p.pos]
 }
 
-func Parse(filename string, recipe []Token) (*AST, error) {
+func Parse(filename string, recipe io.Reader) (*AST, error) {
+	tokens, errs := Tokenize(filename, recipe)
+	if len(errs) != 0 {
+		return nil, fmt.Errorf("got errors from tokenizer: %v", errs)
+	}
+
+	return ParseTokens(filename, tokens)
+}
+
+func ParseTokens(filename string, recipe []Token) (*AST, error) {
 	ast := &AST{
 		Filename: filename,
 	}

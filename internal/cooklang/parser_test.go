@@ -37,7 +37,7 @@ func TestTokenize(t *testing.T) {
 
 	fmt.Printf("%s\n", ast)
 
-	for _, step := range ast.Steps {
+	for _, step := range ast.Recipe.Steps {
 		fmt.Println(step.Ingredients())
 	}
 }
@@ -91,7 +91,7 @@ func TestCanonical(t *testing.T) {
 				return
 			}
 
-			for i, step := range recipe.Steps {
+			for i, step := range recipe.Recipe.Steps {
 				if !step.HasInstructions() {
 					continue
 				}

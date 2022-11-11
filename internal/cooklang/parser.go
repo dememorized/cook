@@ -35,7 +35,6 @@ func (p *parser) Peek() Token {
 func Parse(filename string, recipe []Token) (*aromalang.AST, error) {
 	ast := &aromalang.AST{
 		Filename: filename,
-		Steps:    make([]aromalang.Step, 0),
 	}
 
 	p := &parser{
@@ -62,7 +61,7 @@ func Parse(filename string, recipe []Token) (*aromalang.AST, error) {
 		case TokenNewLine:
 			t := p.Next()
 			if t.Type == TokenNewLine && step.HasInstructions() {
-				ast.Steps = append(ast.Steps, step)
+				ast.Recipe.Steps = append(ast.Recipe.Steps, step)
 				step = aromalang.Step{Base: b}
 			}
 		case TokenDoubleDash:
@@ -93,7 +92,7 @@ func Parse(filename string, recipe []Token) (*aromalang.AST, error) {
 			p.skip(oneOf(TokenWhitespace))
 			md.Value = p.eatUntil(oneOf(TokenNewLine))
 
-			step.Components = append(step.Components, md)
+			ast.Recipe.Metadata = append(ast.Recipe.Metadata, md)
 		case TokenText, TokenWhitespace, TokenRightBrace, TokenLeftBrace:
 			txt := p.eatUntil(notIn(
 				TokenText,
@@ -163,7 +162,7 @@ func Parse(filename string, recipe []Token) (*aromalang.AST, error) {
 	}
 
 	if len(step.Components) != 0 {
-		ast.Steps = append(ast.Steps, step)
+		ast.Recipe.Steps = append(ast.Recipe.Steps, step)
 	}
 
 	return ast, p.Error

@@ -9,16 +9,14 @@ import (
 
 type AST struct {
 	Filename string
-	Steps    []Step
+	Recipe   Recipe
 	Errors   []ParseError
 }
 
 func (a *AST) Metadata() map[string]string {
 	md := map[string]string{}
-	for _, step := range a.Steps {
-		for _, m := range step.Metadata() {
-			md[m.Key] = m.Value
-		}
+	for _, m := range a.Recipe.Metadata {
+		md[m.Key] = m.Value
 	}
 	return md
 }
@@ -42,7 +40,7 @@ func (a *AST) String() string {
 	}
 
 	stepString := strings.Builder{}
-	for _, step := range a.Steps {
+	for _, step := range a.Recipe.Steps {
 		stepString.WriteString("\n" + step.String())
 	}
 
@@ -54,8 +52,15 @@ type ParseError struct {
 	Message  string
 }
 
+func NewErrorf(pos scanner.Position, format string, args ...any) *ParseError {
+	return &ParseError{
+		Position: pos,
+		Message:  fmt.Sprintf(format, args...),
+	}
+}
+
 func (e ParseError) Error() string {
-	return e.Message
+	return e.Position.String() + ": " + e.Message
 }
 
 type Component interface {
@@ -72,6 +77,31 @@ func (Base) isComponent() {}
 
 func (b Base) Position() scanner.Position {
 	return b.Pos
+}
+
+type Recipe struct {
+	Base
+	Metadata []Metadata
+	Steps    []Step
+}
+
+func (r Recipe) String() string {
+	md := r.Metadata
+	mdString := strings.Builder{}
+
+	if len(md) != 0 {
+		mdString.WriteByte('\n')
+	}
+	for _, v := range md {
+		mdString.WriteString(fmt.Sprintf("\t%s %s\n", strconv.Quote(v.Key), strconv.Quote(v.Value)))
+	}
+
+	stepString := strings.Builder{}
+	for _, step := range r.Steps {
+		stepString.WriteString("\n" + step.String())
+	}
+
+	return fmt.Sprintf("(recipe {%s}\n[%s])", mdString.String(), stepString.String())
 }
 
 type Step struct {
